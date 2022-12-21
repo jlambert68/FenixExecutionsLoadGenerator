@@ -65,17 +65,25 @@ func (toGuiExecutionObject *MessagesToGuiExecutionObjectStruct) ExecuteTestCase(
 
 	}
 
+	// When TestCaseUuid is empty then use predefined UUID
+	var testCaseUuidToUse string
+	if testCaseExecutionRequest.TestCaseUuid == "" {
+		testCaseUuidToUse = "0e85ba4c-d55a-49f8-80aa-dc106035a759"
+	} else {
+		testCaseUuidToUse = testCaseExecutionRequest.TestCaseUuid
+	}
+
 	// Create Message to be Sent to GuiExecutionServer
 	var initiateSingleTestCaseExecutionRequestMessage *fenixGuiExecutionGrpcApi.InitiateSingleTestCaseExecutionRequestMessage
 	initiateSingleTestCaseExecutionRequestMessage = &fenixGuiExecutionGrpcApi.InitiateSingleTestCaseExecutionRequestMessage{
 		UserAndApplicationRunTimeIdentification: &fenixGuiExecutionGrpcApi.UserAndApplicationRunTimeIdentificationMessage{
-			ApplicationRunTimeUuid: "70f7c67c-f1b2-44b2-a583-97e109174c9e",
+			ApplicationRunTimeUuid: "70f7c67c-f1b2-44b2-a583-97e109174c9e", // Just some UUID-value
 			UserId:                 "LoadGenerator",
 			ProtoFileVersionUsedByClient: fenixGuiExecutionGrpcApi.CurrentFenixExecutionGuiProtoFileVersionEnum(
 				GetHighestGuiExecutionServerProtoFileVersion()),
 		},
-		TestCaseUuid:    testCaseExecutionRequest.TestCaseUuid,
-		TestDataSetUuid: "c02ba879-3571-46d2-a99a-63a91b2235f9",
+		TestCaseUuid:    testCaseUuidToUse,
+		TestDataSetUuid: "c02ba879-3571-46d2-a99a-63a91b2235f9", // Just some UUID-value
 	}
 
 	// Do gRPC-call
