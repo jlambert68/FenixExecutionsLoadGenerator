@@ -37,15 +37,6 @@ func (gcp *GcpObjectStruct) GenerateGCPAccessToken(ctx context.Context) (appende
 // GenerateGCPAccessTokenForServiceAccount Generate Google access token for a service account. Used when running in GCP
 func (gcp *GcpObjectStruct) GenerateGCPAccessTokenForServiceAccount(ctx context.Context) (appendedCtx context.Context, returnAckNack bool, returnMessage string) {
 
-	// If there shouldn't be any call to Worker then just exit
-	if common_config.TurnOffCallToWorker == true {
-		common_config.Logger.WithFields(logrus.Fields{
-			"id": "dbc95a47-3b66-4b14-a364-6df8017662b5",
-		}).Debug("Execution Worker shouldn't be called, exit 'GenerateGCPAccessTokenForServiceAccount'")
-
-		return
-	}
-
 	// Only create the token if there is none, or it has expired
 	if gcp.gcpAccessTokenForServiceAccounts == nil || gcp.gcpAccessTokenForServiceAccounts.Expiry.Before(time.Now()) {
 

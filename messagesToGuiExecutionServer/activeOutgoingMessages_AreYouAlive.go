@@ -49,7 +49,7 @@ func (toGuiExecutionObject *MessagesToGuiExecutionObjectStruct) SendAreYouAliveT
 	}()
 
 	// Only add access token when run on GCP
-	if common_config.ExecutionLocationForFenixGuiExecutionServer == common_config.GCP && common_config.GCPAuthentication == true {
+	if common_config.ExecutionLocationForGuiExecutionServer == common_config.GCP && common_config.GCPAuthentication == true {
 
 		// Add Access token
 		ctx, returnMessageAckNack, returnMessageString = gcp.Gcp.GenerateGCPAccessToken(ctx)

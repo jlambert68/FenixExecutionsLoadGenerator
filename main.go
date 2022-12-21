@@ -35,43 +35,32 @@ func mustGetenv(environmentVariableName string) string {
 		// Extract environment variables from parameters feed into program at compilation time
 
 		switch environmentVariableName {
-		case "RunInTray":
-			environmentVariable = runInTray
-		case "LoggingLevel":
+		case "applicationShouldRunInTray":
+			environmentVariable = applicationShouldRunInTray
+
+		case "loggingLevel":
 			environmentVariable = loggingLevel
 
-		case "ExecutionsLoadGeneratorPort":
-			environmentVariable = ExecutionsLoadGeneratorPort
+		case "executionsLoadGeneratorPort":
+			environmentVariable = executionsLoadGeneratorPort
 
-		case "ExecutionLocationForConnector":
-			environmentVariable = executionLocationForConnector
+		case "executionLocationForExecutionsLoadGenerator":
+			environmentVariable = executionLocationForExecutionsLoadGenerator
 
-		case "ExecutionLocationForWorker":
-			environmentVariable = executionLocationForWorker
+		case "executionLocationForGuiExecutionServer":
+			environmentVariable = executionLocationForGuiExecutionServer
 
-		case "GuiExecutionAddress":
-			environmentVariable = GuiExecutionAddress
+		case "guiExecutionServerAddress":
+			environmentVariable = guiExecutionServerAddress
 
-		case "GuiExecutionPort":
-			environmentVariable = GuiExecutionPort
+		case "guiExecutionServerPort":
+			environmentVariable = guiExecutionServerPort
 
-		case "GCPAuthentication":
-			environmentVariable = gcpAuthentication
+		case "gCPAuthentication":
+			environmentVariable = gCPAuthentication
 
-		case "CAEngineAddress":
-			environmentVariable = caEngineAddress
-
-		case "CAEngineAddressPath":
-			environmentVariable = caEngineAddressPath
-
-		case "UseInternalWebServerForTest":
-			environmentVariable = useInternalWebServerForTest
-
-		case "UseServiceAccount":
+		case "useServiceAccount":
 			environmentVariable = useServiceAccount
-
-		case "TurnOffCallToWorker":
-			environmentVariable = turnOffCallToWorker
 
 		default:
 			log.Fatalf("Warning: %s environment variable not among injected variables.\n", environmentVariableName)
@@ -95,20 +84,16 @@ func mustGetenv(environmentVariableName string) string {
 
 // Variables injected at compilation time
 var (
-	useInjectedEnvironmentVariables string
-	runInTray                       string
-	loggingLevel                    string
-	ExecutionsLoadGeneratorPort     string
-	executionLocationForConnector   string
-	executionLocationForWorker      string
-	GuiExecutionAddress             string
-	GuiExecutionPort                string
-	gcpAuthentication               string
-	caEngineAddress                 string
-	caEngineAddressPath             string
-	useInternalWebServerForTest     string
-	useServiceAccount               string
-	turnOffCallToWorker             string
+	useInjectedEnvironmentVariables             string
+	applicationShouldRunInTray                  string
+	loggingLevel                                string
+	executionsLoadGeneratorPort                 string
+	executionLocationForExecutionsLoadGenerator string
+	executionLocationForGuiExecutionServer      string
+	guiExecutionServerAddress                   string
+	guiExecutionServerPort                      string
+	gCPAuthentication                           string
+	useServiceAccount                           string
 )
 
 func dumpMap(space string, m map[string]interface{}) {
@@ -128,9 +113,6 @@ func main() {
 	// Parse flags if there are any. Used to override hard set values from build process
 	flagLoggingLevel := flag.String("flagLoggingLevel", "", "flagLoggingLevel=InfoLevel [expects: 'DebugLevel', 'InfoLevel']")
 	flagRunInTray := flag.String("flagRunInTray", "", "flagRunInTray=xxxxx [expects: 'true', 'false']")
-	flagUseInternalWebServerForTest := flag.String("flagUseInternalWebServerForTest", "", "flagUseInternalWebServerForTest=xxxxx [expects: 'true', 'false']")
-	flagCAEngineAddress := flag.String("flagCAEngineAddress", "", "flagCAEngineAddress=xxxxx [expects: 'http::/<some address to FangEngine>']")
-	flagTurnOffCallToWorker := flag.String("flagTurnOffCallToWorker", "", "flagTurnOffCallToWorker=xxxxx [expects: 'true', 'false']")
 
 	flag_ldflags := flag.String("ldflags", "", "ldflags should not be used")
 
@@ -139,7 +121,7 @@ func main() {
 	   	true
 	   UseInternalWebServerForTest:
 	   	true
-	   UseServiceAccount:
+	   useServiceAccount:
 	   	true
 
 
@@ -149,7 +131,7 @@ func main() {
 
 	fmt.Println(*flag_ldflags)
 
-	// Verify flag for 'LoggingLevel'
+	// Verify flag for 'loggingLevel'
 
 	switch *flagLoggingLevel {
 
@@ -176,51 +158,12 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Verify flag for 'UseInternalWebServerForTest '
-	switch *flagUseInternalWebServerForTest {
-
-	case "":
-
-	case "true", "false":
-		// Extract if local web server for test should be used instead of FangEngine
-		boolValue, err := strconv.ParseBool(*flagUseInternalWebServerForTest)
-		if err != nil {
-			fmt.Println("Couldn't convert flag variable 'flagUseInternalWebServerForTest:' to an boolean, error: ", err)
-			os.Exit(0)
-		}
-		common_config.UseInternalWebServerForTest = boolValue
-
-	default:
-		fmt.Println("Unknown UseInternalWebServerForTest-parameter '" + *flagUseInternalWebServerForTest + "'. Expected one of the following: '', 'true', 'false'")
-		os.Exit(0)
-	}
-
-	// Verify flag for 'CAEngineAddress '
-	switch *flagCAEngineAddress {
-
-	case "":
-
-	default:
-		common_config.CAEngineAddress = *flagCAEngineAddress
-
-	}
-
-	// Verify flag for 'CAEngineAddress '
-	switch *flagCAEngineAddress {
-
-	case "":
-
-	default:
-		common_config.CAEngineAddress = *flagCAEngineAddress
-
-	}
-
 	var logFileName string
 
 	// Extract from environment variables if it should run as a tray application or not
 	var shouldRunInTray string
 	if *flagRunInTray == "" {
-		shouldRunInTray = mustGetenv("RunInTray")
+		shouldRunInTray = mustGetenv("ApplicationShouldRunInTray")
 	} else {
 		shouldRunInTray = *flagRunInTray
 	}
@@ -233,32 +176,12 @@ func main() {
 		logFileName = ""
 	}
 
-	// Verify flag for 'TurnOffCallToWorker '
-	switch *flagTurnOffCallToWorker {
-
-	case "":
-
-	case "true", "false":
-		// Extract if Worker should be called for TestInstructions or not
-		boolValue, err := strconv.ParseBool(*flagTurnOffCallToWorker)
-		if err != nil {
-			fmt.Println("Couldn't convert flag variable 'flagTurnOffCallToWorker:' to an boolean, error: ", err)
-			os.Exit(0)
-		}
-		common_config.TurnOffCallToWorker = boolValue
-
-	default:
-		fmt.Println("Unknown TurnOffCallToWorker-parameter '" + *flagTurnOffCallToWorker + "'. Expected one of the following: '', 'true', 'false'")
-		os.Exit(0)
-	}
-
 	// Initiate logger in common_config
 	InitLogger(logFileName)
 
 	// When Execution Worker runs on GCP, then set up access
-	if common_config.ExecutionLocationForFenixGuiExecutionServer == common_config.GCP &&
-		common_config.GCPAuthentication == true &&
-		common_config.TurnOffCallToWorker == false {
+	if common_config.ExecutionLocationForGuiExecutionServer == common_config.GCP &&
+		common_config.GCPAuthentication == true {
 		gcp.Gcp = gcp.GcpObjectStruct{}
 
 		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
@@ -385,57 +308,69 @@ func main() {
 	}
 }
 
+/*
+
+
+executionsLoadGeneratorPort=6673
+executionLocationForExecutionsLoadGenerator=LOCALHOST_NODOCKER
+executionLocationForGuiExecutionServer=LOCALHOST_NODOCKER
+*gCPAuthentication=false
+*guiExecutionServerAddress=127.0.0.1
+*guiExecutionServerPort=6671
+*loggingLevel=DebugLevel
+applicationShouldRunInTray=truex
+*useServiceAccount=false
+
+*/
+
 func init() {
-	//executionLocationForConnector := flag.String("startupType", "0", "The application should be started with one of the following: LOCALHOST_NODOCKER, LOCALHOST_DOCKER, GCP")
-	//flag.Parse()
 
 	var err error
 
-	// Get Environment variable to tell how/were this worker is  running
-	var executionLocationForConnector = mustGetenv("ExecutionLocationForConnector")
+	// Get Environment variable to tell were ExecutionsLoadGenerator is running
+	var tempExecutionLocationForExecutionsLoadGenerator = mustGetenv("ExecutionLocationForExecutionsLoadGenerator")
 
-	switch executionLocationForConnector {
+	switch tempExecutionLocationForExecutionsLoadGenerator {
 	case "LOCALHOST_NODOCKER":
-		common_config.ExecutionLocationForConnector = common_config.LocalhostNoDocker
+		common_config.ExecutionLocationForExecutionsLoadGenerator = common_config.LocalhostNoDocker
 
 	case "LOCALHOST_DOCKER":
-		common_config.ExecutionLocationForConnector = common_config.LocalhostDocker
+		common_config.ExecutionLocationForExecutionsLoadGenerator = common_config.LocalhostDocker
 
 	case "GCP":
-		common_config.ExecutionLocationForConnector = common_config.GCP
+		common_config.ExecutionLocationForExecutionsLoadGenerator = common_config.GCP
 
 	default:
-		fmt.Println("Unknown Execution location for Connector: " + executionLocationForConnector + ". Expected one of the following: 'LOCALHOST_NODOCKER', 'LOCALHOST_DOCKER', 'GCP'")
+		fmt.Println("Unknown Execution location for ExecutionsLoadGenerator: " + tempExecutionLocationForExecutionsLoadGenerator + ". Expected one of the following: 'LOCALHOST_NODOCKER', 'LOCALHOST_DOCKER', 'GCP'")
+		os.Exit(0)
+
+	}
+	// Get Environment variable to tell were GuiExecutionServer is running
+	var executionLocationForExecutionLocationForGuiExecutionServer = mustGetenv("ExecutionLocationForGuiExecutionServer")
+
+	switch executionLocationForExecutionLocationForGuiExecutionServer {
+	case "LOCALHOST_NODOCKER":
+		common_config.ExecutionLocationForGuiExecutionServer = common_config.LocalhostNoDocker
+
+	case "LOCALHOST_DOCKER":
+		common_config.ExecutionLocationForGuiExecutionServer = common_config.LocalhostDocker
+
+	case "GCP":
+		common_config.ExecutionLocationForGuiExecutionServer = common_config.GCP
+
+	default:
+		fmt.Println("Unknown Execution location for Fenix Execution Worker Server: " + executionLocationForExecutionLocationForGuiExecutionServer + ". Expected one of the following: 'LOCALHOST_NODOCKER', 'LOCALHOST_DOCKER', 'GCP'")
 		os.Exit(0)
 
 	}
 
-	// Get Environment variable to tell were Fenix Execution Server is running
-	var executionLocationForGuiExecution = mustGetenv("ExecutionLocationForWorker")
+	// Address to Fenix GuiExecution Server
+	common_config.GuiExecutionServerAddress = mustGetenv("GuiExecutionServerAddress")
 
-	switch executionLocationForGuiExecution {
-	case "LOCALHOST_NODOCKER":
-		common_config.ExecutionLocationForFenixGuiExecutionServer = common_config.LocalhostNoDocker
-
-	case "LOCALHOST_DOCKER":
-		common_config.ExecutionLocationForFenixGuiExecutionServer = common_config.LocalhostDocker
-
-	case "GCP":
-		common_config.ExecutionLocationForFenixGuiExecutionServer = common_config.GCP
-
-	default:
-		fmt.Println("Unknown Execution location for Fenix Execution Worker Server: " + executionLocationForGuiExecution + ". Expected one of the following: 'LOCALHOST_NODOCKER', 'LOCALHOST_DOCKER', 'GCP'")
-		os.Exit(0)
-
-	}
-
-	// Address to Fenix Execution Worker Server
-	common_config.FenixGuiExecutionAddress = mustGetenv("GuiExecutionAddress")
-
-	// Port for Fenix Execution Worker Server
-	common_config.FenixGuiExecutionPort, err = strconv.Atoi(mustGetenv("GuiExecutionPort"))
+	// Port for Fenix GuiExecution Server
+	common_config.GuiExecutionServerPort, err = strconv.Atoi(mustGetenv("GuiExecutionServerPort"))
 	if err != nil {
-		fmt.Println("Couldn't convert environment variable 'GuiExecutionPort' to an integer, error: ", err)
+		fmt.Println("Couldn't convert environment variable 'GuiExecutionServerPort' to an integer, error: ", err)
 		os.Exit(0)
 
 	}
@@ -449,12 +384,12 @@ func init() {
 	}
 
 	// Build the Dial-address for gPRC-call
-	common_config.FenixGuiExecutionAddressToDial = common_config.FenixGuiExecutionAddress + ":" + strconv.Itoa(common_config.FenixGuiExecutionPort)
+	common_config.FenixGuiExecutionServerAddressToDial = common_config.GuiExecutionServerAddress + ":" + strconv.Itoa(common_config.GuiExecutionServerPort)
 
 	// Extract Debug level
-	var loggingLevel = mustGetenv("LoggingLevel")
+	var tempLoggingLevel = mustGetenv("LoggingLevel")
 
-	switch loggingLevel {
+	switch tempLoggingLevel {
 
 	case "DebugLevel":
 		common_config.LoggingLevel = logrus.DebugLevel
@@ -463,7 +398,7 @@ func init() {
 		common_config.LoggingLevel = logrus.InfoLevel
 
 	default:
-		fmt.Println("Unknown loggingLevel '" + loggingLevel + "'. Expected one of the following: 'DebugLevel', 'InfoLevel'")
+		fmt.Println("Unknown loggingLevel '" + tempLoggingLevel + "'. Expected one of the following: 'DebugLevel', 'InfoLevel'")
 		os.Exit(0)
 
 	}
@@ -471,37 +406,17 @@ func init() {
 	// Extract if there is a need for authentication when going toward GCP
 	boolValue, err := strconv.ParseBool(mustGetenv("GCPAuthentication"))
 	if err != nil {
-		fmt.Println("Couldn't convert environment variable 'GCPAuthentication:' to an boolean, error: ", err)
+		fmt.Println("Couldn't convert environment variable 'gCPAuthentication:' to an boolean, error: ", err)
 		os.Exit(0)
 	}
 	common_config.GCPAuthentication = boolValue
 
-	// Extract if local web server for test should be used instead of FangEngine
-	boolValue, err = strconv.ParseBool(mustGetenv("UseInternalWebServerForTest"))
-	if err != nil {
-		fmt.Println("Couldn't convert environment variable 'UseInternalWebServerForTest:' to an boolean, error: ", err)
-		os.Exit(0)
-	}
-	common_config.UseInternalWebServerForTest = boolValue
-
-	// Extract Address, Port and url-path for Custody Arrangement Rest-Engine
-	common_config.CAEngineAddress = mustGetenv("CAEngineAddress")
-	common_config.CAEngineAddressPath = mustGetenv("CAEngineAddressPath")
-
-	// Extract if Service Account should be used towards GCP or should the user log in via web
+	// Extract if a service account should be used towards GCP
 	boolValue, err = strconv.ParseBool(mustGetenv("UseServiceAccount"))
 	if err != nil {
 		fmt.Println("Couldn't convert environment variable 'UseServiceAccount:' to an boolean, error: ", err)
 		os.Exit(0)
 	}
 	common_config.UseServiceAccount = boolValue
-
-	// Extract if there should be calls to GuiExecution or not. Used when testing Connector
-	boolValue, err = strconv.ParseBool(mustGetenv("TurnOffCallToWorker"))
-	if err != nil {
-		fmt.Println("Couldn't convert environment variable 'TurnOffCallToWorker:' to an boolean, error: ", err)
-		os.Exit(0)
-	}
-	common_config.TurnOffCallToWorker = boolValue
 
 }

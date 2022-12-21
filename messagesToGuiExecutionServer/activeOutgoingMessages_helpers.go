@@ -31,7 +31,7 @@ func (toGuiExecutionObject *MessagesToGuiExecutionObjectStruct) SetConnectionToF
 
 	//When running on GCP then use credential otherwise not
 
-	if common_config.ExecutionLocationForFenixGuiExecutionServer == common_config.GCP {
+	if common_config.ExecutionLocationForGuiExecutionServer == common_config.GCP {
 		creds := credentials.NewTLS(&tls.Config{
 			InsecureSkipVerify: true,
 			RootCAs:            systemRoots,
@@ -58,19 +58,19 @@ func (toGuiExecutionObject *MessagesToGuiExecutionObjectStruct) SetConnectionToF
 		// Set up connection to Fenix Execution Worker
 		// When run on GCP, use credentials
 		var newGrpcClientConnection *grpc.ClientConn
-		if common_config.ExecutionLocationForFenixGuiExecutionServer == common_config.GCP {
+		if common_config.ExecutionLocationForGuiExecutionServer == common_config.GCP {
 			// Run on GCP
 			ctx, newGrpcClientConnection = dialFromGrpcurl(ctx)
 			remoteFenixGuiExecutionServerConnection = newGrpcClientConnection
-			//remoteFenixGuiExecutionServerConnection, err = grpc.Dial(common_config.FenixGuiExecutionAddressToDial, opts...)
+			//remoteFenixGuiExecutionServerConnection, err = grpc.Dial(common_config.FenixGuiExecutionServerAddressToDial, opts...)
 		} else {
 			// Run Local
-			remoteFenixGuiExecutionServerConnection, err = grpc.Dial(common_config.FenixGuiExecutionAddressToDial, grpc.WithInsecure())
+			remoteFenixGuiExecutionServerConnection, err = grpc.Dial(common_config.FenixGuiExecutionServerAddressToDial, grpc.WithInsecure())
 		}
 		if err != nil {
 			common_config.Logger.WithFields(logrus.Fields{
 				"ID": "50b59b1b-57ce-4c27-aa84-617f0cde3100",
-				"common_config.FenixGuiExecutionAddressToDial": common_config.FenixGuiExecutionAddressToDial,
+				"common_config.FenixGuiExecutionServerAddressToDial": common_config.FenixGuiExecutionServerAddressToDial,
 				"error message":      err,
 				"dialAttemptCounter": dialAttemptCounter,
 			}).Error("Did not connect to FenixExecutionServer via gRPC")
@@ -86,7 +86,7 @@ func (toGuiExecutionObject *MessagesToGuiExecutionObjectStruct) SetConnectionToF
 		} else {
 			common_config.Logger.WithFields(logrus.Fields{
 				"ID": "0c650bbc-45d0-4029-bd25-4ced9925a059",
-				"common_config.FenixGuiExecutionAddressToDial": common_config.FenixGuiExecutionAddressToDial,
+				"common_config.FenixGuiExecutionServerAddressToDial": common_config.FenixGuiExecutionServerAddressToDial,
 			}).Info("gRPC connection OK to FenixExecutionServer")
 
 			// Creates a new Client
@@ -109,7 +109,7 @@ var (
 
 func dialFromGrpcurl(ctx context.Context) (context.Context, *grpc.ClientConn) {
 
-	target := common_config.FenixGuiExecutionAddressToDial
+	target := common_config.FenixGuiExecutionServerAddressToDial
 
 	dialTime := 10 * time.Second
 
@@ -201,7 +201,7 @@ func (toGuiExecutionObject *MessagesToGuiExecutionObjectStruct) generateGCPAcces
 		// Create an identity token.
 		// With a global TokenSource tokens would be reused and auto-refreshed at need.
 		// A given TokenSource is specific to the audience.
-		tokenSource, err := idtoken.NewTokenSource(ctx, "https://"+common_config.FenixGuiExecutionAddress)
+		tokenSource, err := idtoken.NewTokenSource(ctx, "https://"+common_config.GuiExecutionServerAddress)
 		if err != nil {
 			common_config.Logger.WithFields(logrus.Fields{
 				"ID":  "8ba622d8-b4cd-46c7-9f81-d9ade2568eca",
