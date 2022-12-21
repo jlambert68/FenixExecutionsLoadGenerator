@@ -6,7 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.2.3
 	github.com/gorilla/pat v1.0.1
 	github.com/gorilla/sessions v1.2.1
-	github.com/jlambert68/FenixGrpcApi v0.0.0-20221221091344-3b822b6afd6c
+	github.com/jlambert68/FenixGrpcApi v0.0.0-20221221183614-051993a18d9f
 	github.com/markbates/goth v1.73.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/toqueteos/webbrowser v1.2.0
