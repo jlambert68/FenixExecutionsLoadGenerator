@@ -65,6 +65,17 @@ func (toGuiExecutionObject *MessagesToGuiExecutionObjectStruct) ExecuteTestCase(
 
 	}
 
+	// Extract incoming parameters
+	var (
+		numberOfParallellGroups                 int32
+		numberOfMilliSecondsBetweenItemsInGroup int32
+		numberOfItemsPerGroup                   int32
+	)
+
+	numberOfParallellGroups = testCaseExecutionRequest.NumberOfParallellGroups
+	numberOfMilliSecondsBetweenItemsInGroup = testCaseExecutionRequest.NumberOfSecondsBetweenItemsInGroup
+	numberOfItemsPerGroup = testCaseExecutionRequest.NumberOfItemsPerGroup
+
 	// When TestCaseUuid is empty then use predefined UUID
 	var testCaseUuidToUse string
 	if testCaseExecutionRequest.TestCaseUuid == "" {
@@ -86,27 +97,59 @@ func (toGuiExecutionObject *MessagesToGuiExecutionObjectStruct) ExecuteTestCase(
 		TestDataSetUuid: "c02ba879-3571-46d2-a99a-63a91b2235f9", // Just some UUID-value
 	}
 
-	// Do gRPC-call
-	var initiateSingleTestCaseExecutionResponseMessage *fenixGuiExecutionGrpcApi.InitiateSingleTestCaseExecutionResponseMessage
-	initiateSingleTestCaseExecutionResponseMessage, err = fenixGuiExecutionGrpcClient.InitiateTestCaseExecution(ctx, initiateSingleTestCaseExecutionRequestMessage)
+	// Create parallell groups of execution
+	var groupCounter int32
+	for groupCounter = 0; groupCounter < numberOfParallellGroups; groupCounter++ {
 
-	// Shouldn't happen
-	if err != nil {
-		common_config.Logger.WithFields(logrus.Fields{
-			"ID":    "07c1dbcf-2fbb-4cc8-8178-59d4ee17e1b8",
-			"error": err,
-		}).Error("Problem to do gRPC-call to FenixGuiExecutionServer for 'InitiateTestCaseExecution'")
+		// Start up each group
+		go func() {
 
-		return
+			// Variables need in gRPC-call
+			var tempFenixGuiExecutionGrpcClient fenixGuiExecutionGrpcApi.FenixExecutionServerGuiGrpcServicesForGuiClientClient
+			tempFenixGuiExecutionGrpcClient = fenixGuiExecutionGrpcApi.NewFenixExecutionServerGuiGrpcServicesForGuiClientClient(remoteFenixGuiExecutionServerConnection)
 
-	} else if initiateSingleTestCaseExecutionResponseMessage.AckNackResponse.AckNack == false {
-		// FenixTestDataSyncServer couldn't handle gPRC call
-		common_config.Logger.WithFields(logrus.Fields{
-			"ID":                                  "3a02696a-5c94-4ef0-9846-4bd0d40daeaf",
-			"Message from Fenix Execution Server": initiateSingleTestCaseExecutionResponseMessage.AckNackResponse.Comments,
-		}).Error("Problem to do gRPC-call to FenixGuiExecutionServer for 'InitiateTestCaseExecution'")
+			// Loop all items for each group
+			var itemCounter int32
+			for itemCounter = 0; itemCounter < numberOfItemsPerGroup; itemCounter++ {
 
-		return
+				// Do gRPC-call
+				var initiateSingleTestCaseExecutionResponseMessage *fenixGuiExecutionGrpcApi.InitiateSingleTestCaseExecutionResponseMessage
+				initiateSingleTestCaseExecutionResponseMessage, err = tempFenixGuiExecutionGrpcClient.InitiateTestCaseExecution(ctx, initiateSingleTestCaseExecutionRequestMessage)
+
+				// Shouldn't happen
+				if err != nil {
+					common_config.Logger.WithFields(logrus.Fields{
+						"ID":    "07c1dbcf-2fbb-4cc8-8178-59d4ee17e1b8",
+						"error": err,
+						"initiateSingleTestCaseExecutionRequestMessage": initiateSingleTestCaseExecutionRequestMessage,
+					}).Error("Problem to do gRPC-call to FenixGuiExecutionServer for 'InitiateTestCaseExecution'")
+
+					return
+
+				} else if initiateSingleTestCaseExecutionResponseMessage.AckNackResponse.AckNack == false {
+					// FenixTestDataSyncServer couldn't handle gPRC call
+					common_config.Logger.WithFields(logrus.Fields{
+						"ID": "3a02696a-5c94-4ef0-9846-4bd0d40daeaf",
+						"initiateSingleTestCaseExecutionRequestMessage": initiateSingleTestCaseExecutionRequestMessage,
+						"Message from Fenix Execution Server":           initiateSingleTestCaseExecutionResponseMessage.AckNackResponse.Comments,
+					}).Error("Problem to do gRPC-call to FenixGuiExecutionServer for 'InitiateTestCaseExecution'")
+
+					return
+				}
+
+				common_config.Logger.WithFields(logrus.Fields{
+					"ID":                    "775da478-c193-4b36-b399-f87b247cff7e",
+					"TestCaseUuid":          testCaseUuidToUse,
+					"TestCaseExecutionUuid": initiateSingleTestCaseExecutionResponseMessage.TestCasesInExecutionQueue.TestCaseExecutionUuid,
+					"AckNack":               initiateSingleTestCaseExecutionResponseMessage.AckNackResponse.AckNack,
+					"Comments":              initiateSingleTestCaseExecutionResponseMessage.AckNackResponse.Comments,
+				}).Info("Response frm GuiExecutionServer after initiating Execution for TestCase'")
+
+				// Sleep before sending next TestCase for execution in this Group
+				time.Sleep(time.Millisecond * time.Duration(numberOfMilliSecondsBetweenItemsInGroup))
+
+			}
+		}()
 	}
 
 	return
