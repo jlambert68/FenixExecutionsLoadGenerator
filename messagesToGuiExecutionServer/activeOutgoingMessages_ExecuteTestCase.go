@@ -7,6 +7,7 @@ import (
 	fenixGuiExecutionGrpcApi "github.com/jlambert68/FenixGrpcApi/FenixExecutionServer/fenixExecutionServerGuiGrpcApi/go_grpc_api"
 	fenixExecutionsLoadGeneratorGrpcApi "github.com/jlambert68/FenixGrpcApi/FenixExecutionsLoadGenerator/fenixExecutionsLoadGeneratorGrpcApi/go_grpc_api"
 	"github.com/sirupsen/logrus"
+	"sync"
 	"time"
 )
 
@@ -99,10 +100,14 @@ func (toGuiExecutionObject *MessagesToGuiExecutionObjectStruct) ExecuteTestCase(
 
 	// Create parallell groups of execution
 	var groupCounter int32
+	var waitGroup sync.WaitGroup
 	for groupCounter = 0; groupCounter < numberOfParallellGroups; groupCounter++ {
 
+		// Add for group to wait for in the end
+		waitGroup.Add(1)
+
 		// Start up each group
-		go func() {
+		go func(waitGroupReference *sync.WaitGroup, groupNumber int32) {
 
 			// Variables need in gRPC-call
 			var tempFenixGuiExecutionGrpcClient fenixGuiExecutionGrpcApi.FenixExecutionServerGuiGrpcServicesForGuiClientClient
@@ -149,8 +154,26 @@ func (toGuiExecutionObject *MessagesToGuiExecutionObjectStruct) ExecuteTestCase(
 				time.Sleep(time.Millisecond * time.Duration(numberOfMilliSecondsBetweenItemsInGroup))
 
 			}
-		}()
+
+			// Group finished
+			common_config.Logger.WithFields(logrus.Fields{
+				"ID":           "b1943931-e2e3-42a1-a1be-17ed8af324fb",
+				"TestCaseUuid": testCaseUuidToUse,
+				"Group number": groupNumber,
+			}).Info("Group is finished")
+
+			waitGroupReference.Done()
+
+		}(&waitGroup, groupCounter)
 	}
+
+	// Wait for all parallell groups to finish
+	waitGroup.Wait()
+
+	// All groups are finished
+	common_config.Logger.WithFields(logrus.Fields{
+		"ID": "0d54923e-7c3d-4adc-a6d9-debb25f22268",
+	}).Info("All groups are finished")
 
 	return
 
